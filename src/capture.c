@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <maxminddb.h>
 #include <netinet/ip.h>
 #include <net/ethernet.h>
 #include <netinet/tcp.h>
@@ -10,6 +11,8 @@
 #include <netinet/ip_icmp.h>
 #include <arpa/inet.h>
 #include "capture.h"
+
+MMDB_s mmdb;
 
 struct source {
     char ip[INET_ADDRSTRLEN];
@@ -58,6 +61,7 @@ volatile sig_atomic_t stop = 0;
 void sig_handler(int sig) {
     stop = 1;
     print_stats();
+    MMDB_close(&mmdb);
     exit(0);
 }
 
@@ -76,6 +80,16 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *header, const u_char
         inet_ntop(AF_INET, &(ip->ip_src), src_ip, INET_ADDRSTRLEN);
         inet_ntop(AF_INET, &(ip->ip_dst), dst_ip, INET_ADDRSTRLEN);
         printf("IPv4: src=%s, dst=%s, proto=%d\n", src_ip, dst_ip, ip->ip_p);
+        // GeoIP lookup
+        int gai_error, mmdb_error;
+        MMDB_lookup_result_s result = MMDB_lookup_string(&mmdb, src_ip, &gai_error, &mmdb_error);
+        if (MMDB_SUCCESS == mmdb_error && result.found_entry) {
+            MMDB_entry_data_s entry_data;
+            int status = MMDB_get_value(&result.entry, &entry_data, "country", "names", "en", NULL);
+            if (MMDB_SUCCESS == status && entry_data.has_data) {
+                printf("Country: %.*s\n", entry_data.data_size, entry_data.utf8_string);
+            }
+        }
         add_source(src_ip);
         if (ip->ip_p == IPPROTO_TCP) {
             pkt_stats.tcp++;
