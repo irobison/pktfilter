@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <string.h>
+#include <signal.h>
 #include "capture.h"
 
 int main() {
+    signal(SIGINT, sig_handler);
     printf("pktfilter: Hello world\n");
     list_interfaces();
     char interface[256];
