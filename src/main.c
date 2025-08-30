@@ -1,9 +1,18 @@
 #include <stdio.h>
+#include <string.h>
 #include "capture.h"
 
-int main(int argc, char *argv[]) {
-    const char *interface = (argc > 1) ? argv[1] : "en0";
+int main() {
     printf("pktfilter: Hello world\n");
-    capture_packet(interface);
+    list_interfaces();
+    char interface[256];
+    printf("Enter interface name: ");
+    fgets(interface, sizeof(interface), stdin);
+    interface[strcspn(interface, "\n")] = 0;
+    char filter[256] = "";
+    printf("Enter BPF filter (or press enter for none): ");
+    fgets(filter, sizeof(filter), stdin);
+    filter[strcspn(filter, "\n")] = 0;
+    capture_packet(interface, filter);
     return 0;
 }

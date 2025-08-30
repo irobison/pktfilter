@@ -1,6 +1,7 @@
 #include <pcap.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <netinet/ip.h>
 #include <net/ethernet.h>
 #include <netinet/tcp.h>
@@ -59,15 +60,28 @@ void list_interfaces() {
     pcap_freealldevs(alldevs);
 }
 
-void capture_packet(const char *dev) {
+void capture_packet(const char *dev, const char *filter) {
     char errbuf[PCAP_ERRBUF_SIZE];
-    list_interfaces();
     pcap_t *handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuf);
     if (handle == NULL) {
         fprintf(stderr, "Couldn't open device %s: %s\n", dev, errbuf);
         return;
     }
-    printf("Capturing packets on %s. Press Ctrl+C to stop.\n", dev);
+    if (strlen(filter) > 0) {
+        struct bpf_program fp;
+        if (pcap_compile(handle, &fp, filter, 0, PCAP_NETMASK_UNKNOWN) == -1) {
+            fprintf(stderr, "Couldn't parse filter %s: %s\n", filter, pcap_geterr(handle));
+            pcap_close(handle);
+            return;
+        }
+        if (pcap_setfilter(handle, &fp) == -1) {
+            fprintf(stderr, "Couldn't install filter %s: %s\n", filter, pcap_geterr(handle));
+            pcap_close(handle);
+            return;
+        }
+        pcap_freecode(&fp);
+    }
+    printf("Capturing packets on %s with filter '%s'. Press Ctrl+C to stop.\n", dev, strlen(filter) > 0 ? filter : "none");
     pcap_loop(handle, 0, packet_handler, NULL);
     pcap_close(handle);
 }
