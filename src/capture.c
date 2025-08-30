@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include <netinet/ip.h>
 #include <net/ethernet.h>
+#include <netinet/tcp.h>
+#include <netinet/udp.h>
+#include <netinet/ip_icmp.h>
 #include <arpa/inet.h>
 #include "capture.h"
 
@@ -20,6 +23,24 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *header, const u_char
         inet_ntop(AF_INET, &(ip->ip_src), src_ip, INET_ADDRSTRLEN);
         inet_ntop(AF_INET, &(ip->ip_dst), dst_ip, INET_ADDRSTRLEN);
         printf("IPv4: src=%s, dst=%s, proto=%d\n", src_ip, dst_ip, ip->ip_p);
+        if (ip->ip_p == IPPROTO_TCP) {
+            struct tcphdr *tcp = (struct tcphdr *)(packet + sizeof(struct ether_header) + (ip->ip_hl << 2));
+            printf("TCP: src_port=%d, dst_port=%d, seq=%u, flags=",
+                   ntohs(tcp->th_sport), ntohs(tcp->th_dport), ntohl(tcp->th_seq));
+            if (tcp->th_flags & TH_SYN) printf("SYN ");
+            if (tcp->th_flags & TH_ACK) printf("ACK ");
+            if (tcp->th_flags & TH_FIN) printf("FIN ");
+            if (tcp->th_flags & TH_RST) printf("RST ");
+            if (tcp->th_flags & TH_PUSH) printf("PSH ");
+            if (tcp->th_flags & TH_URG) printf("URG ");
+            printf("\n");
+        } else if (ip->ip_p == IPPROTO_UDP) {
+            struct udphdr *udp = (struct udphdr *)(packet + sizeof(struct ether_header) + (ip->ip_hl << 2));
+            printf("UDP: src_port=%d, dst_port=%d\n", ntohs(udp->uh_sport), ntohs(udp->uh_dport));
+        } else if (ip->ip_p == IPPROTO_ICMP) {
+            struct icmp *icmp = (struct icmp *)(packet + sizeof(struct ether_header) + (ip->ip_hl << 2));
+            printf("ICMP: type=%d, code=%d\n", icmp->icmp_type, icmp->icmp_code);
+        }
     }
     printf("Packet length: %d\n", header->len);
 }
