@@ -2,6 +2,6 @@
 #define CAPTURE_H
 
 void list_interfaces();
-void capture_packet();
+void capture_packet(const char *interface);
 
 #endif

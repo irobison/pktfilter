@@ -59,8 +59,7 @@ void list_interfaces() {
     pcap_freealldevs(alldevs);
 }
 
-void capture_packet() {
-    const char *dev = "en0";  // Specific interface
+void capture_packet(const char *dev) {
     char errbuf[PCAP_ERRBUF_SIZE];
     list_interfaces();
     pcap_t *handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuf);
