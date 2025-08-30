@@ -1,0 +1,7 @@
+#ifndef CAPTURE_H
+#define CAPTURE_H
+
+void list_interfaces();
+void capture_packet();
+
+#endif
