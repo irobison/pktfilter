@@ -4,7 +4,7 @@ TARGET = bin/pktfilter
 SRC = src/main.c src/capture.c
 
 $(TARGET): $(SRC)
-	$(CC) $(CFLAGS) -o $(TARGET) $(SRC) -L/opt/homebrew/lib -lpcap -lmaxminddb
+	$(CC) $(CFLAGS) -o $(TARGET) $(SRC) -L/opt/homebrew/lib -lpcap -lmaxminddb -lmicrohttpd -pthread
 
 clean:
 	rm -f $(TARGET)
